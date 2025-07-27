@@ -42,7 +42,9 @@ func (h *Hub) run() {
 		case message := <-h.broadcast:
 			for client := range h.clients {
 				select {
-				case client.send <- message:
+				//el append es de prueba. La idea es qur cada cliente tenga su
+				//nombre de usuario al enviae un mensaje.
+				case client.send <- append([]byte("yo- "), message...):
 				default:
 					close(client.send)
 					delete(h.clients, client)

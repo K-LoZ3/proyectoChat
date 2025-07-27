@@ -13,29 +13,44 @@ import (
 
 func serveHome(w http.ResponseWriter, r *http.Request) {
 	log.Println(r.URL)
-
-	http.ServeFile(w, r, "./home.html")
+  
+  //Archivo a servir
+	http.ServeFile(w, r, "home.html")
 }
 
 func main() {
-  addr := "10.254.97.246:8080"
+  //Como el binario lo ejecuto desde termux en mi celular
+  //para que se pueda acceder desde otro dispositivo hay que usar esta ip.
+  addr := "0.0.0.0:8080"
   
+  //reouter para manejar las rutas
   r :=  chi.NewRouter()
   
+  //hub. Se encarga de manejar de administrar los clientes.
+  //los almacena, los elimina o les comarte el mensaje que envie uno de ellos.
+  //con esto declaramos las variables del hub
 	hub := newHub()
+	
+	//corremos el administrador, esta es la funcion que almacena clientes, elimina clientes o comparte el mensaje entrelos demas
 	go hub.run()
 	
-	r.Route("/", func(r chi.Router) {
+	//ruta principal. 
+	r.Route("/chat", func(r chi.Router) {
+	  //con el metodo get para la ruta principal servimos el archivo
+	  //Este se encargara de redirigir la pagina por el protocolo ws:// 
 	  r.Get("/", serveHome)
 	  
+	  //esta es la ruta que se maneja desde el protocolo ws.
   	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
+  	  //desde el protocolo ws:// en la rita /ws.
+  	  //los clientes que entren en esta ruta seran creados y almacenados con esta funcion.
   		serveWs(hub, w, r)
   		
   	})
   	
 	})
 	
-	
+	//creo un servidor con las caracteristicas
 	server := http.Server{
     Addr: addr,
     Handler: r,
