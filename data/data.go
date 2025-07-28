@@ -4,17 +4,26 @@ package data
 
 import (
   "database/sql"
-  "log"
   
+  "golang.org/x/crypto/bcrypt"
   _ "modernc.org/sqlite"
 )
 
+//Declaro la bariable de esta manera ya que quiero que el codigo del mamejo
+//de la base de datos desde el paquete main sea muy sensillo.
 var db *sql.DB
 
-func InitDB() {
+//Inicia la base de datos con una tabla para usuarios y conyraseñas.
+func InitDB() error {
   var err error
-  db, err = sql.Open("sqlite", "base.db")
   
+  //abrimos a creamos el archivo para la base de dstos.
+  db, err = sql.Open("sqlite", "base.db")
+  if err != nil {
+    return err
+  }
+  
+  //Intruccion para la tabla.
   create := `
   CREATE TABLE IF NOT EXISTS users(
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,32 +31,46 @@ func InitDB() {
   password TEXT NOT NULL
   );`
   
+  //creamos la tabla.
   _, err = db.Exec(create)
   if err != nil {
-    log.Fatal("Error al crear e uniciar la tabla.", err)
+    return err
   }
+  
+  return nil
 }
 
-//var Close = db.Close
 func Close() {
   db.Close()
 }
 
-func Register(username string, password string) bool {
-  _, err := db.Exec("INSERT INTO users(username, password) VALUES( ?, ?)", username, password)
+func Register(username string, password string) error {
+  //Se encripta la contraseña entes de guardarla
+  hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
   if err != nil {
-    log.Fatal("Error al guardar usuario y clave", err)
-    return false
+    return err
   }
-  return true
+  //sobreescribimos la contraseña
+  password = string(hash)
+  
+  //almacenamos en la base de datos
+  _, err = db.Exec("INSERT INTO users(username, password) VALUES( ?, ?)", username, password)
+  if err != nil {
+    return err
+  }
+  
+  return nil
 }
 
-func FindUser(username string, password string) bool {
-  var u, p string
-  err := db.QueryRow("SELECT username, password FROM users WHERE username = ? AND password = ?", username, password).Scan(&u, &p)
+func FindUser(username string, password string) error {
+  var p string
+  //buscamos en la base de datos el usuario seleccionamos la contraseña
+  //para luego compararla
+  err := db.QueryRow("SELECT password FROM users WHERE username = ?", username).Scan(&p)
   if err != nil {
-    log.Fatal("Usuario o clave invalida", err)
-    return false
+    return err
   }
-  return true
+  
+  //conparamos la contraseña con la almacenada.
+  return bcrypt.CompareHashAndPassword([]byte(p), []byte(password))
 }

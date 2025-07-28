@@ -9,7 +9,7 @@ import (
 	"net/http"
 	// Declarada pero aun no la he usado ya que solo se creo el paquete para
 	//administrar la base de datos.
-	_ "Golang/Practicas/chat/data"
+	
 	
 	"github.com/go-chi/chi/v5"
 )
@@ -36,6 +36,9 @@ func main() {
 	
 	//corremos el administrador, esta es la funcion que almacena clientes, elimina clientes o comparte el mensaje entrelos demas
 	go hub.run()
+	
+	r.Post("/registro", handleRegistro)
+	//r.Post("/login", handleLogin)
 	
 	//ruta principal. 
 	r.Route("/chat", func(r chi.Router) {
