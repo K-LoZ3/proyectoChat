@@ -7,6 +7,9 @@ import (
   "time"
 	"log"
 	"net/http"
+	// Declarada pero aun no la he usado ya que solo se creo el paquete para
+	//administrar la base de datos.
+	_ "Golang/Practicas/chat/data"
 	
 	"github.com/go-chi/chi/v5"
 )
