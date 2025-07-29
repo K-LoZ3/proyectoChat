@@ -7,21 +7,20 @@ import (
   "time"
 	"log"
 	"net/http"
-	// Declarada pero aun no la he usado ya que solo se creo el paquete para
-	//administrar la base de datos.
-	
-	
+
+  "Golang/Practicas/chat/data"
+
 	"github.com/go-chi/chi/v5"
+	"github.com/joho/godotenv"
 )
 
-func serveHome(w http.ResponseWriter, r *http.Request) {
-	log.Println(r.URL)
-  
-  //Archivo a servir
-	http.ServeFile(w, r, "home.html")
-}
-
 func main() {
+  //Cargamos el godotenv para poder ver la ckave secreta que gebera el jwt
+  err := godotenv.Load()
+  if err != nil {
+    log.Fatal("Error cargando .env")
+  }
+  
   //Como el binario lo ejecuto desde termux en mi celular
   //para que se pueda acceder desde otro dispositivo hay que usar esta ip.
   addr := "0.0.0.0:8080"
@@ -37,8 +36,14 @@ func main() {
 	//corremos el administrador, esta es la funcion que almacena clientes, elimina clientes o comparte el mensaje entrelos demas
 	go hub.run()
 	
+	//iniciamos la base de datos.
+	data.InitDB()
+	//cerramos la base de datos al final.
+	defer data.Close()
+	
+	
 	r.Post("/registro", handleRegistro)
-	//r.Post("/login", handleLogin)
+	r.Post("/login", handleLogin)
 	
 	//ruta principal. 
 	r.Route("/chat", func(r chi.Router) {
