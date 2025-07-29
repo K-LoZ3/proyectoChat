@@ -63,9 +63,10 @@ func crearJWT(n string) (string, error) {
 	return tokenString, nil
 }
 
+//validarJWT verifica el el token este correcto.
 func validarJWT(t string) (string, error) {
-  firma := os.Getenv("FRASE")
-
+  firma := os.Getenv("FRASE") //obtenemos la firma del .env
+  //paseamos el token.
   token, err := jwt.Parse(t, func(t *jwt.Token) (interface{}, error) {
       return []byte(firma), nil
   })
@@ -79,7 +80,8 @@ func validarJWT(t string) (string, error) {
   if !ok {
     return "", fmt.Errorf("Error convertir el jwt en map")
   }
-    
+  
+  //validamos qie no este expirado
   exp := claims["exp"].(float64)
   if time.Now().Unix() > int64(exp) {
     return "", fmt.Errorf("Error al al validar el jwt")

@@ -41,16 +41,19 @@ func main() {
 	//cerramos la base de datos al final.
 	defer data.Close()
 	
-	
+	//servimos el archivo para manejar el registro de usuarios.
 	r.Get("/register", func (w http.ResponseWriter, r *http.Request) {
 	  http.ServeFile(w, r, "register.html")
 	})
 	
+	//servimos el archivo para manejar el login de los usuarios.
 	r.Get("/login", func (w http.ResponseWriter, r *http.Request) {
 	  http.ServeFile(w, r, "login.html")
 	})
 	
+	//La ruta se encargara de registrar un usuario.
 	r.Post("/register", handleRegistro)
+	//la ruta se encargara de logear un usuario.
 	r.Post("/login", handleLogin)
 	
 	//ruta principal. 

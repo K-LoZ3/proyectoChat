@@ -54,16 +54,19 @@ func handleRegistro(w http.ResponseWriter, r *http.Request) {
   http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
+//handleLogin Se encarga de manejar la ruta para logear a un usuario.
+//Valida que la informacion recibida del usuario y la compara con la
+//base de datos para luego devolver un jwt firmado.
 func handleLogin(w http.ResponseWriter, r *http.Request) {
   var u users
-  
+  //recibimos los datos de usuario desde un json
   err := json.NewDecoder(r.Body).Decode(&u)
   if err != nil {
     http.Error(w, "Error al leer el usuario del json", http.StatusBadRequest)
     return
   }
   
-    //si el string del usuario no cumple con los carecteres retornamos el error
+  //si el string del usuario no cumple con los carecteres retornamos el error
   if !regexpUsuario(u.Username) {
     http.Error(w, "Error, el usuario solo debe contener numeros letras o '_'", http.StatusBadRequest)
     return
@@ -75,18 +78,25 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
     return
   }
   
+  //Buscamos el usuario en la base de datos, y obtenemos el hash para
+  //comparar las contraseñas.
   err = data.FindUser(u.Username, u.Password)
   if err != nil {
     http.Error(w, "Error, usuario o contraseña incorrecta", http.StatusBadRequest)
     return
   }
   
+  //Creamos un JWT firmado con el nombre de usuario y tiempo de expiracion.
+  //el tiempo esta harcodeado en 2 horas de momento para pruebas en la funcion.
   token, err := crearJWT(u.Username)
   if err != nil {
     http.Error(w, "Error al crear el token", http.StatusBadRequest)
     return
   }
-
+  
+  //agregamos el token a las cookies del navegador del usuario.
+  //esta opcion sera para este proyecto ya que asi el usuario no tiene
+  //que agregar el token manualmente porque no es una api.
   http.SetCookie(w, &http.Cookie{
       Name:     "auth_token",
       Value:    token,
@@ -94,6 +104,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
       HttpOnly: true,
       Secure:   false,
   })
+  //redireccionamos a la ruta del chat.
   http.Redirect(w, r, "/chat", http.StatusSeeOther)
 }
 
