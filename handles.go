@@ -4,8 +4,10 @@ package main
 
 import (
   "encoding/json"
+  "context"
   "net/http"
   "log"
+  "fmt"
   
   "Golang/Practicas/chat/data"
 )
@@ -42,12 +44,14 @@ func handleRegistro(w http.ResponseWriter, r *http.Request) {
   //Almacenamos el usuario en la base de datos.
   err = data.Register(u.Username, u.Password)
   if err != nil {
-    http.Error(w, "Error al guardar usuario en la base de datos", http.StatusBadRequest)
+    errorStr := fmt.Sprintf("Error al guardar usuario en la base de datos, %v", err)
+    http.Error(w, errorStr, http.StatusBadRequest)
     return
   }
   
   //devolvemos el estado de creado.
   w.WriteHeader(http.StatusCreated)
+  http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
 func handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -99,4 +103,28 @@ func serveHome(w http.ResponseWriter, r *http.Request) {
   
   //Archivo a servir
 	http.ServeFile(w, r, "home.html")
+}
+
+func authMiddleware(next http.Handler) http.Handler {
+  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    cookie, err := r.Cookie("auth_token")
+    if err != nil {
+      http.Error(w, "Error al leer token", http.StatusBadRequest)
+      http.Redirect(w, r, "/login", http.StatusSeeOther)
+      return
+    }
+    
+    username, err := validarJWT(cookie.Value)
+    if err != nil {
+      errorStr := fmt.Sprintf("Error al validar token %v", err)
+      http.Error(w, errorStr, http.StatusBadRequest)
+      http.Redirect(w, r, "/login", http.StatusSeeOther)
+      return
+    }
+    
+    //Lo convertimos a contexto para pasarlo a al siguiente HandlerFunc
+    ctx := context.WithValue(r.Context(), "username", username)
+    
+    next.ServeHTTP(w, r.WithContext(ctx))
+  })
 }

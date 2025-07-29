@@ -42,11 +42,21 @@ func main() {
 	defer data.Close()
 	
 	
-	r.Post("/registro", handleRegistro)
+	r.Get("/register", func (w http.ResponseWriter, r *http.Request) {
+	  http.ServeFile(w, r, "register.html")
+	})
+	
+	r.Get("/login", func (w http.ResponseWriter, r *http.Request) {
+	  http.ServeFile(w, r, "login.html")
+	})
+	
+	r.Post("/register", handleRegistro)
 	r.Post("/login", handleLogin)
 	
 	//ruta principal. 
 	r.Route("/chat", func(r chi.Router) {
+	  r.Use(authMiddleware)
+	  
 	  //con el metodo get para la ruta principal servimos el archivo
 	  //Este se encargara de redirigir la pagina por el protocolo ws:// 
 	  r.Get("/", serveHome)
