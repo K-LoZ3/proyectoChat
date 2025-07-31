@@ -40,6 +40,9 @@ var upgrader = websocket.Upgrader{
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
 	hub *Hub
+	
+	//nombre de usuario
+	name string
 
 	// The websocket connection.
 	conn *websocket.Conn
@@ -74,6 +77,10 @@ func (c *Client) readPump() {
 			break
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
+		
+		//le agrego el numbre de cada usuario al mensaje
+		message = append([]byte(c.name), message...)
+		//envianos el mensaje
 		c.hub.broadcast <- message
 	}
 }
@@ -125,14 +132,17 @@ func (c *Client) writePump() {
 }
 
 // serveWs handles websocket requests from the peer.
-func serveWs(hub *Hub, w http.ResponseWriter, r *http.Request) {
+func serveWs(hub *Hub, username string, w http.ResponseWriter, r *http.Request) {
   //recibimos la coneccio  desde el html.
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	client := &Client{hub: hub, conn: conn, send: make(chan []byte, 256)}
+	
+	//esto se ra para formatear como se identifica cada mensaje
+	username += " -> "
+	client := &Client{hub: hub, name: username, conn: conn, send: make(chan []byte, 256)}
 	hub.register <- client
 
 	// Allow collection of memory referenced by the caller by doing all work in

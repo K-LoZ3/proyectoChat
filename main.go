@@ -66,9 +66,11 @@ func main() {
 	  
 	  //esta es la ruta que se maneja desde el protocolo ws.
   	r.Get("/ws", func(w http.ResponseWriter, r *http.Request) {
+  	  //Extraemos el nombre del contexto gracias al middleware
+  	  nombre := r.Context().Value("username").(string)
   	  //desde el protocolo ws:// en la rita /ws.
   	  //los clientes que entren en esta ruta seran creados y almacenados con esta funcion.
-  		serveWs(hub, w, r)
+  		serveWs(hub, nombre, w, r)
   		
   	})
   	
