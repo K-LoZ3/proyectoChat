@@ -14,9 +14,11 @@ type Hub struct {
 	broadcast chan []byte
 
 	// Register requests from the clients.
+	//este canal es basicamente para notificar que se crea un cliente.
 	register chan *Client
 
 	// Unregister requests from clients.
+	//este canal seria para eliminarlo.
 	unregister chan *Client
 }
 
@@ -32,18 +34,27 @@ func newHub() *Hub {
 func (h *Hub) run() {
 	for {
 		select {
+		//caso para registrar cliente.
+		//almacenamos el cliente en el arreglo.
 		case client := <-h.register:
 			h.clients[client] = true
+			
+		//caso para eliminar cliente.
+		//Eliminamos el cliente del mapa.
 		case client := <-h.unregister:
 			if _, ok := h.clients[client]; ok {
 				delete(h.clients, client)
 				close(client.send)
 			}
+			
+		//caso del mensaje.
+		//compartimos el mensaje a cada uni de los cliente.
+		//Recorremos el map de clientes y le enviamos por canal el mensaje.
 		case message := <-h.broadcast:
 			for client := range h.clients {
 				select {
-				//el append es de prueba. La idea es qur cada cliente tenga su
-				//nombre de usuario al enviae un mensaje.
+				//el select es para asegurar que solo se envia mensaje
+				//cuando la variable tenga datos que enviar.
 				case client.send <- message:
 				default:
 					close(client.send)

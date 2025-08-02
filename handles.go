@@ -50,7 +50,6 @@ func handleRegistro(w http.ResponseWriter, r *http.Request) {
   }
   
   //devolvemos el estado de creado.
-  w.WriteHeader(http.StatusCreated)
   http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
