@@ -79,13 +79,13 @@ func validarJWT(t string) (string, error) {
   //incluimos en el antes de firmarlo.
   claims, ok := token.Claims.(jwt.MapClaims)
   if !ok {
-    return "", errores.ErrorCode(errores.ErrorInvalidToken)
+    return "", errores.NewStruct("Error claim", "Error al convertir a mapClaim el token", errores.ErrorInvalidToken)
   }
   
   //validamos qie no este expirado
   exp := claims["exp"].(float64)
   if time.Now().Unix() > int64(exp) {
-    return "", errores.ErrorCode(errores.ErrorInvalidToken)
+    return "", errores.NewStruct("Expired token", "Toke expirado.", errores.ErrorInvalidToken)
   }
     
   //extraemos el nombre de usuario y lo casteamos a string
