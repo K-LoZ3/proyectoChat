@@ -3,6 +3,7 @@ package errores
 import (
   "net/http"
   "fmt"
+  "log"
 )
 
 //Pueba de manejo de errores con una arreglo de estructuras de errores.
@@ -20,8 +21,8 @@ const (
 
 
 type err struct {
-  title: string
-  msg: string
+  title string
+  msg string
   status int
 }
 
@@ -29,7 +30,7 @@ var errors = []err{
   err{ "Bad request", "Error en la informacion compartida por el usuario", http.StatusBadRequest },
   err{ "Internal data base", "Error en la base de datos", http.StatusInternalServerError },
   err{ "User not found", "Usuario incorrecto", http.StatusNotFound },
-  err{ "Bad format user", "Solo se permiten mayusculas, minusculas y caracteres especiales, @ # ? _ - .", http.StatusBadRequest },
+  err{ "Bad format user", "Solo se permiten mayusculas, minusculas y caracteres especiales _ .", http.StatusBadRequest },
   err{ "Invalid format password", "Debe contener al menos una mayuscula, una minuscula y un caracter especial @ # ? _ - .", http.StatusBadRequest },
   err{ "Invalid token", "Token invalido o expirado.", http.StatusUnauthorized},
   err{ "Register", "Registro incompleto.", http.StatusInternalServerError },
@@ -79,7 +80,7 @@ func NewStruct(title string, msg string, status int) ErrorStruct {
 func NewCode(i int) ErrorStruct {
   if i < 0 || i > len(errors) - 1 {
     //manejamos el error de codigo si no lo existe codigo de error
-    return NewStruct("", "", -1)
+    return NewStruct("", "No se reconoce el error", http.StatusInternalServerError)
   }
   
   e := errors[i]
@@ -90,9 +91,19 @@ func NewCode(i int) ErrorStruct {
 func WriteHTTP(w http.ResponseWriter, title string, msg string, status int) {
   e := NewStruct(title, msg, status)
   
-  http.Error(w, e.Error(), e.status)
+  http.Error(w, e.Error(), e.Status)
 }
 
-func WriteError(w http.ResponseWriter, e ErrorStruct) {
+func WriteStruct(w http.ResponseWriter, e ErrorStruct) {
   http.Error(w, e.Error(), e.Status)
+}
+
+func WriteCode(w http.ResponseWriter, code int) {
+  e := NewCode(code)
+  
+  WriteStruct(w, e)
+}
+
+func Log(e error, msg string) {
+  log.Printf("ERROR %v: %s", e, msg)
 }

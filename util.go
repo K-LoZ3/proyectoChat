@@ -4,7 +4,8 @@ import (
   "regexp"
   "os"
   "time"
-  "fmt"
+  
+  "Golang/Practicas/chat/errores"
   
   "github.com/golang-jwt/jwt"
 )
@@ -71,20 +72,20 @@ func validarJWT(t string) (string, error) {
       return []byte(firma), nil
   })
   if err != nil || !token.Valid {
-    return "", fmt.Errorf("Error al parsear el jwt", err)
+    return "", err
   }
     
   //convertimos el token a un map claims para extraer los datos que
   //incluimos en el antes de firmarlo.
   claims, ok := token.Claims.(jwt.MapClaims)
   if !ok {
-    return "", fmt.Errorf("Error convertir el jwt en map")
+    return "", errores.ErrorCode(errores.ErrorInvalidToken)
   }
   
   //validamos qie no este expirado
   exp := claims["exp"].(float64)
   if time.Now().Unix() > int64(exp) {
-    return "", fmt.Errorf("Error al al validar el jwt")
+    return "", errores.ErrorCode(errores.ErrorInvalidToken)
   }
     
   //extraemos el nombre de usuario y lo casteamos a string

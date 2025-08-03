@@ -7,9 +7,9 @@ import (
   "context"
   "net/http"
   "log"
-  "fmt"
   
   "Golang/Practicas/chat/data"
+  "Golang/Practicas/chat/errores"
 )
 
 //struct para administrar la base de datos con los usuarios
@@ -26,26 +26,29 @@ func handleRegistro(w http.ResponseWriter, r *http.Request) {
   //decodificamos el json del usuario.
   err := json.NewDecoder(r.Body).Decode(&u)
   if err != nil {
-    http.Error(w, "Error en el usuario", http.StatusBadRequest)
+    errores.WriteCode(w, errores.ErrorBadRequest)
+    errores.Log(err, "Error en la decodificacion del json al extraer el usuaerio.")
   }
   
   //si el string del usuario no cumple con los carecteres retornamos el error
   if !regexpUsuario(u.Username) {
-    http.Error(w, "Error, el usuario solo debe contener numeros letras o '_'", http.StatusBadRequest)
+    errores.WriteCode(w, errores.ErrorBadFormatUser)
+    errores.Log(nil, "Error en los caracteres del usuario.")
     return
   }
   
   //retornamos el error si la contraseña no cumple con los carecteres.
   if !regexpPassword(u.Password) {
-    http.Error(w, "Error, la contraseña debe tener mayuscula, minuscula, numero y caracter especial.", http.StatusBadRequest)
+    errores.WriteCode(w, errores.ErrorBadFormatPassword)
+    errores.Log(nil, "Error en los caracteres de la contraseña.")
     return
   }
   
   //Almacenamos el usuario en la base de datos.
   err = data.Register(u.Username, u.Password)
   if err != nil {
-    errorStr := fmt.Sprintf("Error al guardar usuario en la base de datos, %v", err)
-    http.Error(w, errorStr, http.StatusBadRequest)
+    errores.WriteCode(w, errores.ErrorInternalDataBase)
+    errores.Log(err, "Error al almacenar el usuario en la base de datos.")
     return
   }
   
@@ -61,19 +64,22 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
   //recibimos los datos de usuario desde un json
   err := json.NewDecoder(r.Body).Decode(&u)
   if err != nil {
-    http.Error(w, "Error al leer el usuario del json", http.StatusBadRequest)
+    errores.WriteCode(w, errores.ErrorBadRequest)
+    errores.Log(err, "Error en la decodificacion del json al extraer el usuaerio.")
     return
   }
   
   //si el string del usuario no cumple con los carecteres retornamos el error
   if !regexpUsuario(u.Username) {
-    http.Error(w, "Error, el usuario solo debe contener numeros letras o '_'", http.StatusBadRequest)
+    errores.WriteCode(w, errores.ErrorUserNotFound)
+    errores.Log(nil, "Error en los caracteres del usuario.")
     return
   }
   
   //retornamos el error si la contraseña no cumple con los carecteres.
   if !regexpPassword(u.Password) {
-    http.Error(w, "Error, la contraseña debe tener mayuscula, minuscula, numero y caracter especial.", http.StatusBadRequest)
+    errores.WriteCode(w, errores.ErrorUserNotFound)
+    errores.Log(nil, "Error en los caracteres del usuario.")
     return
   }
   
@@ -81,7 +87,8 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
   //comparar las contraseñas.
   err = data.FindUser(u.Username, u.Password)
   if err != nil {
-    http.Error(w, "Error, usuario o contraseña incorrecta", http.StatusBadRequest)
+    errores.WriteCode(w, errores.ErrorUserNotFound)
+    errores.Log(err, "Error al buscar usuario en la base de datos.")
     return
   }
   
@@ -89,7 +96,8 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
   //el tiempo esta harcodeado en 2 horas de momento para pruebas en la funcion.
   token, err := crearJWT(u.Username)
   if err != nil {
-    http.Error(w, "Error al crear el token", http.StatusBadRequest)
+    errores.WriteCode(w, errores.ErrorInvalidToken)
+    errores.Log(err, "Error al crear el token del usuaruo.")
     return
   }
   
@@ -119,15 +127,16 @@ func authMiddleware(next http.Handler) http.Handler {
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     cookie, err := r.Cookie("auth_token")
     if err != nil {
-      http.Error(w, "Error al leer token", http.StatusBadRequest)
+      errores.WriteCode(w, errores.ErrorInvalidToken)
+      errores.Log(err, "Error en el token del usuario. Cookies devuelven token incirrecto.")
       http.Redirect(w, r, "/login", http.StatusSeeOther)
       return
     }
     
     username, err := validarJWT(cookie.Value)
     if err != nil {
-      errorStr := fmt.Sprintf("Error al validar token %v", err)
-      http.Error(w, errorStr, http.StatusBadRequest)
+      errores.WriteCode(w, errores.ErrorInvalidToken)
+      errores.Log(err, "Error al validar el token.")
       http.Redirect(w, r, "/login", http.StatusSeeOther)
       return
     }
